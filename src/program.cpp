@@ -187,11 +187,7 @@ ProgramGenerator::ProgramGenerator() : hash_seed(0) {
         }
 
         // output variable inject
-        if (!F.return_type.empty() && !F.output.empty()) {
-            IntTypeID out_tid = mapIntType(F.return_type);
-            auto out_ty = IntegralType::init(out_tid);
-            IRValue out_val = parseLiteralToIR(out_tid, F.output);
-
+        if (!F.return_type.empty()) {
             std::ostringstream oss;
             oss << F.function_name << "(";
             for (size_t i = 0; i < call_args.size(); ++i) {
@@ -199,12 +195,37 @@ ProgramGenerator::ProgramGenerator() : hash_seed(0) {
                 oss << call_args[i];
             }
             oss << ")";
-            injected_func_call = oss.str();
+            std::string call_expr = oss.str();
 
-            auto out_var = std::make_shared<ScalarVar>("output_1", out_ty, out_val, true, injected_func_call);
-            out_var->setIsDead(false);
-            ext_inp_sym_tbl->addVar(out_var);
-            ext_inp_sym_tbl->addVarExpr(ScalarVarUseExpr::init(out_var));
+            std::string ret = F.return_type;
+            for (auto &ch : ret) ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+            auto trim = [](std::string &x){
+                while(!x.empty() && std::isspace((unsigned char)x.front())) x.erase(x.begin());
+                while(!x.empty() && std::isspace((unsigned char)x.back())) x.pop_back();
+            };
+            trim(ret);
+
+            if (ret == "void") {
+                injected_func_call = std::string("0;\nstatic const auto none = [](){\n    ")
+                                     + call_expr +
+                                     ";\n    return 0;\n}()";
+                auto out_ty = IntegralType::init(IntTypeID::INT);
+                IRValue out_val = parseLiteralToIR(IntTypeID::INT, "0");
+                auto out_var = std::make_shared<ScalarVar>("output_1", out_ty, out_val, true, injected_func_call);
+                out_var->setIsDead(false);
+                ext_inp_sym_tbl->addVar(out_var);
+                ext_inp_sym_tbl->addVarExpr(ScalarVarUseExpr::init(out_var));
+            }
+            else if (!F.output.empty()) {
+                IntTypeID out_tid = mapIntType(F.return_type);
+                auto out_ty = IntegralType::init(out_tid);
+                IRValue out_val = parseLiteralToIR(out_tid, F.output);
+                injected_func_call = call_expr;
+                auto out_var = std::make_shared<ScalarVar>("output_1", out_ty, out_val, true, injected_func_call);
+                out_var->setIsDead(false);
+                ext_inp_sym_tbl->addVar(out_var);
+                ext_inp_sym_tbl->addVarExpr(ScalarVarUseExpr::init(out_var));
+            }
         }
 
         // function body
