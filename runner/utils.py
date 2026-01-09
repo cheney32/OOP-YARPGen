@@ -98,29 +98,35 @@ def literal_representer(dumper, data):
 # 注册自定义的LiteralString
 yaml.add_representer(LiteralString, literal_representer)
 
-def generate_random_function_batch_from_zip(zip_path, batch_size, total_files):
-    output_dir= "./"
-    output_yaml_name= "functions.yaml"
-    # 随机抽取不同编号
-    random_ids = random.sample(range(1, total_files + 1), min(batch_size, total_files))
+def generate_single_function_yaml(zip_path: str,
+                                  total_files: int,
+                                  output_dir: str = "./",
+                                  output_yaml_name: str = "function.yaml",
+                                  chosen_id: int = None):
+    """
+    Pick exactly one function YAML from zip_path and write a single mapping to output_dir/output_yaml_name.
+    The generator expects runner/functions.yaml to be a single mapping or a sequence; we output a single mapping.
+    """
+    if total_files <= 0:
+        raise ValueError("total_files must be positive")
 
-    merged_data = []
+    func_id = chosen_id if (chosen_id is not None and 1 <= chosen_id <= total_files) else random.randint(1, total_files)
+    filename = f"func_{func_id}.yaml"
+
+    if not os.path.exists(zip_path):
+        raise FileNotFoundError(f"zip_path not found: {zip_path}")
 
     with zipfile.ZipFile(zip_path, 'r') as zipf:
-        for idx in random_ids:
-            filename = f"func_{idx}.yaml"
-            try:
-                with zipf.open(filename) as file:
-                    yaml_data = yaml.safe_load(file)
-                    # 把 function 字段处理成 LiteralString，以便输出成 |- 样式
-                    if 'function' in yaml_data:
-                        yaml_data['function'] = LiteralString(yaml_data['function'].strip())
-                    merged_data.append(yaml_data)
-            except KeyError:
-                print(f"Warning: {filename} not found in zip archive.")
+        try:
+            with zipf.open(filename) as file:
+                yaml_data = yaml.safe_load(file)
+                # Ensure function body is dumped as a literal block
+                if isinstance(yaml_data, dict) and 'function' in yaml_data and isinstance(yaml_data['function'], str):
+                    yaml_data['function'] = LiteralString(yaml_data['function'].strip())
+        except KeyError:
+            raise FileNotFoundError(f"{filename} not found in zip archive: {zip_path}")
 
-    # 写出到一个新的yaml文件
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, output_yaml_name)
     with open(output_path, 'w', encoding='utf-8') as f:
-        yaml.dump(merged_data, f, sort_keys=False, allow_unicode=True)
+        yaml.dump(yaml_data, f, sort_keys=False, allow_unicode=True)

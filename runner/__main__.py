@@ -29,8 +29,7 @@ timeout = config.get('timeout')
 run_count = config.get('run_count')
 
 # 获取函数注入的参数
-func_source_path = config.get('func_source_path')
-func_batch_size = config.get('func_batch_size')
+func_zip_path = config.get('func_zip_path')
 func_total = config.get('func_total')
 
 TIME_STR = get_current_time_str()
@@ -75,7 +74,7 @@ def generator_runner(test_num: int = 1):
 
     for i in range(test_num):
         output_file = GENERATOR_OUTPUT_FOLDER + TIME_STR + '--' + str(i+1) + file_ext
-        generate_random_function_batch_from_zip(func_source_path, func_batch_size, func_total)
+        generate_single_function_yaml(func_zip_path, func_total, output_dir="./", output_yaml_name="function.yaml")
         print("generating " + output_file)
         cmd = GENERATOR_ELF + " -o " + output_file
         os.system(cmd)

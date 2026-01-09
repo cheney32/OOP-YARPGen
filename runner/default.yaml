@@ -6,8 +6,7 @@ timeout : 60
 run_count : 100
 
 # 配置：函数注入功能
-func_source_path : "./functions.zip"
-func_batch_size : 5
+func_zip_path : "./functions.zip"
 func_total : 20000
 
 # 配置：编译器及其选项
