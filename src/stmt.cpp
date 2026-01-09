@@ -92,9 +92,9 @@ void DeclStmt::emit(std::shared_ptr<EmitCtx> ctx, std::ostream &stream,
     // TODO: we need to do the right thing here
     stream << data->getType()->getName(ctx) << " ";
     if (data->getIsFunc()) {
-        stream << data->getOriginName();
-        stream << " = ";
         stream << data->getName(ctx);
+        stream << " = ";
+        stream << data->getOriginName();
     } else {
         stream << data->getName(ctx);
         if (init_expr.use_count() != 0) {

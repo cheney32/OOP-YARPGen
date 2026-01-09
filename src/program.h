@@ -53,6 +53,9 @@ class ProgramGenerator {
     std::shared_ptr<SymbolTable> ext_out_sym_tbl;
     std::shared_ptr<ScopeStmt> new_test;
 
+    std::string injected_func_call;
+    std::string injected_func_code;
+
     unsigned long long int hash_seed;
     void hash(unsigned long long int const v);
     void hashArray(std::shared_ptr<Array> const &arr);

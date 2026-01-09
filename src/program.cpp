@@ -26,8 +26,69 @@ limitations under the License.
 #include <yaml-cpp/yaml.h>
 #include <iostream>
 #include <filesystem>
+#include <cctype>
 
 using namespace yarpgen;
+
+// Map common C/C++ integer type strings to internal IntTypeID
+static IntTypeID mapIntType(const std::string &name_raw) {
+    std::string s = name_raw;
+    for (auto &ch : s) ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+    auto trim = [](std::string &x){
+        while(!x.empty() && std::isspace((unsigned char)x.front())) x.erase(x.begin());
+        while(!x.empty() && std::isspace((unsigned char)x.back())) x.pop_back();
+    };
+    trim(s);
+
+    if (s == "bool") return IntTypeID::BOOL;
+
+    if (s == "char" || s == "signed char") return IntTypeID::SCHAR;
+    if (s == "unsigned char" || s == "uchar") return IntTypeID::UCHAR;
+
+    if (s == "short" || s == "short int" || s == "signed short" || s == "signed short int") return IntTypeID::SHORT;
+    if (s == "unsigned short" || s == "unsigned short int" || s == "ushort") return IntTypeID::USHORT;
+
+    if (s == "int" || s == "signed" || s == "signed int") return IntTypeID::INT;
+    if (s == "unsigned" || s == "unsigned int" || s == "uint") return IntTypeID::UINT;
+
+    // Project doesn’t keep platform “long”, map to long long family
+    if (s == "long" || s == "long int" || s == "signed long" || s == "signed long int") return IntTypeID::LLONG;
+    if (s == "unsigned long" || s == "unsigned long int" || s == "ulong") return IntTypeID::ULLONG;
+
+    if (s == "long long" || s == "long long int" || s == "signed long long" || s == "signed long long int") return IntTypeID::LLONG;
+    if (s == "unsigned long long" || s == "unsigned long long int" || s == "ullong") return IntTypeID::ULLONG;
+
+    return IntTypeID::INT;
+}
+
+static IRValue parseLiteralToIR(IntTypeID tid, std::string lit) {
+    auto trim = [](std::string &x){
+        while(!x.empty() && std::isspace((unsigned char)x.front())) x.erase(x.begin());
+        while(!x.empty() && std::isspace((unsigned char)x.back())) x.pop_back();
+    };
+    trim(lit);
+
+    std::string lower = lit;
+    for (auto &ch : lower) ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+    if (lower == "true")  return IRValue(IntTypeID::BOOL, IRValue::AbsValue{false, 1});
+    if (lower == "false") return IRValue(IntTypeID::BOOL, IRValue::AbsValue{false, 0});
+
+    auto is_suf = [](char c){ return c=='u'||c=='U'||c=='l'||c=='L'; };
+    while (!lit.empty() && is_suf(lit.back())) lit.pop_back();
+
+    uint64_t u = 0;
+    try {
+        if (!lit.empty() && lit[0]=='-') {
+            long long v = std::stoll(lit, nullptr, 0);
+            u = static_cast<uint64_t>(v);
+        } else {
+            u = std::stoull(lit, nullptr, 0);
+        }
+    } catch (...) {
+        u = 0;
+    }
+    return IRValue(tid, IRValue::AbsValue{false, u});
+}
 
 static std::vector<FunctionInfo> loadFunctionsFromYaml(const std::string& yaml_path) {
     std::vector<FunctionInfo> functions;
@@ -37,43 +98,48 @@ static std::vector<FunctionInfo> loadFunctionsFromYaml(const std::string& yaml_p
             return {};
         }
         YAML::Node root = YAML::LoadFile(yaml_path);
-        if (!root.IsSequence()) {
-            return {};
-        }
 
-        for (const auto& node : root) {
+        auto parse_one = [&](const YAML::Node& node)->bool {
             FunctionInfo func;
             try {
-                func.function_name = node["function_name"].as<std::string>();
+                if (node["function_name"]) func.function_name = node["function_name"].as<std::string>();
                 if (node["parameter_types"]) {
                     for (const auto& param : node["parameter_types"]) {
                         func.parameter_types.push_back(param.as<std::string>());
                     }
                 }
-                func.return_type = node["return_type"].as<std::string>();
-                func.function_body = node["function"].as<std::string>();
+                if (node["return_type"]) func.return_type = node["return_type"].as<std::string>();
+                if (node["function"]) func.function_body = node["function"].as<std::string>();
                 if (node["input"]) {
                     for (const auto& input_val : node["input"]) {
                         func.input.push_back(input_val.as<std::string>());
                     }
                 }
-                func.output = node["output"].as<std::string>();
+                if (node["output"]) func.output = node["output"].as<std::string>();
                 if (node["misc"]) {
                     for (const auto& misc_line : node["misc"]) {
                         func.misc.push_back(misc_line.as<std::string>());
                     }
                 }
             }
-            catch (const std::exception& e) {
-                return {};
-            }
+            catch (...) { return false; }
             functions.push_back(func);
+            return true;
+        };
+
+        if (root.IsSequence()) {
+            for (const auto& node : root) parse_one(node);
+        }
+        else if (root.IsMap()) {
+            parse_one(root);
+        }
+        else {
+            return {};
         }
     }
-    catch (const std::exception& e) {
+    catch (...) {
         return {};
     }
-
     return functions;
 }
 
@@ -99,11 +165,57 @@ ProgramGenerator::ProgramGenerator() : hash_seed(0) {
             std::make_shared<ScalarVarUseExpr>(new_var));
     }
 
-    auto functions = loadFunctionsFromYaml("../runner/functions.yaml");
+    auto functions = loadFunctionsFromYaml("../runner/function.yaml");
 
     if (!functions.empty()) {
-            // Inject function here
+        const FunctionInfo &F = functions.front();
+
+        // input variables inject
+        std::vector<std::string> call_args;
+        size_t n = std::min(F.parameter_types.size(), F.input.size());
+        call_args.reserve(n);
+        for (size_t i = 0; i < n; ++i) {
+            IntTypeID in_tid = mapIntType(F.parameter_types[i]);
+            auto in_ty = IntegralType::init(in_tid);
+            IRValue in_val = parseLiteralToIR(in_tid, F.input[i]);
+            std::string name = "input_" + std::to_string(i + 1);
+            auto in_var = std::make_shared<ScalarVar>(name, in_ty, in_val);
+            in_var->setIsDead(false);
+            ext_inp_sym_tbl->addVar(in_var);
+            ext_inp_sym_tbl->addVarExpr(ScalarVarUseExpr::init(in_var));
+            call_args.push_back(name);
         }
+
+        // output variable inject
+        if (!F.return_type.empty() && !F.output.empty()) {
+            IntTypeID out_tid = mapIntType(F.return_type);
+            auto out_ty = IntegralType::init(out_tid);
+            IRValue out_val = parseLiteralToIR(out_tid, F.output);
+
+            std::ostringstream oss;
+            oss << F.function_name << "(";
+            for (size_t i = 0; i < call_args.size(); ++i) {
+                if (i) oss << ", ";
+                oss << call_args[i];
+            }
+            oss << ")";
+            injected_func_call = oss.str();
+
+            auto out_var = std::make_shared<ScalarVar>("output_1", out_ty, out_val, true, injected_func_call);
+            out_var->setIsDead(false);
+            ext_inp_sym_tbl->addVar(out_var);
+            ext_inp_sym_tbl->addVarExpr(ScalarVarUseExpr::init(out_var));
+        }
+
+        // function body
+        std::ostringstream oss;
+        for (const auto &line : F.misc) oss << line << "\n";
+        if (!F.function_body.empty()) {
+            oss << F.function_body;
+            if (F.function_body.back() != '\n') oss << "\n";
+        }
+        injected_func_code = oss.str();
+    }
 
     pop_ctx->setExtInpSymTable(ext_inp_sym_tbl);
     pop_ctx->setExtOutSymTable(ext_out_sym_tbl);
@@ -139,6 +251,8 @@ void ProgramGenerator::emitCheckFunc(std::ostream &stream) {
                 "int const v) {\n";
     out_file << "    *seed ^= v + 0x9e3779b9 + ((*seed)<<6) + ((*seed)>>2);\n";
     out_file << "}\n\n";
+
+    out_file << injected_func_code << "\n";
 }
 
 // These buffers track parameters which are members of struct or class
@@ -861,11 +975,7 @@ static bool emitVarFuncParam(std::shared_ptr<EmitCtx> ctx, std::ostream &stream,
             }
             else{
                 stream << var->getType()->getName(ctx) << " ";
-                if (var->getIsFunc()) {
-                    stream << var->getOriginName();
-                } else {
-                    stream << var->getName(ctx);
-                }
+                stream << var->getName(ctx);
             }
         }
 
@@ -909,11 +1019,7 @@ static bool emitVarFuncParamInMain(std::shared_ptr<EmitCtx> ctx, std::ostream &s
             }
         }
         else{
-            if (var->getIsFunc()) {
-                stream << var->getOriginName();
-            } else {
-                stream << var->getName(ctx);
-            }
+            stream << var->getName(ctx);
         }
         emit_any = true;
     }
