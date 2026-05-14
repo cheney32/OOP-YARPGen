@@ -413,245 +413,245 @@ static void emitPtrDecl(std::shared_ptr<EmitCtx> ctx, std::ostream &stream,
 }
 
 
-static void emitStructDecl(std::shared_ptr<EmitCtx> ctx, std::ostream &stream,
-                           std::vector<std::shared_ptr<ScalarVar>> vars, std::vector<std::shared_ptr<Array>> arrays) {
-    stream << "struct GlobalStruct{\n";
+// static void emitStructDecl(std::shared_ptr<EmitCtx> ctx, std::ostream &stream,
+//                            std::vector<std::shared_ptr<ScalarVar>> vars, std::vector<std::shared_ptr<Array>> arrays) {
+//     stream << "struct GlobalStruct{\n";
 
-    for (auto &var : vars) {
-        stream << "    ";
-        auto init_val = std::make_shared<ConstantExpr>(var->getInitValue());
-        auto member_decl_stmt = std::make_shared<MemberDeclStmt>(var, init_val);
-        switch (var->getDeclMod()) {
-            case DeclModID::ALIGNAS_8:
-                stream << "alignas(8) ";
-                break;
-            case DeclModID::ALIGNAS_16:
-                stream << "alignas(16) ";
-                break;
-            case DeclModID::MUTABLE:
-                stream << "mutable ";
-                break;
-            default: break;
-        }
-        member_decl_stmt->emit(ctx, stream);
-        stream << "\n";
-    }
+//     for (auto &var : vars) {
+//         stream << "    ";
+//         auto init_val = std::make_shared<ConstantExpr>(var->getInitValue());
+//         auto member_decl_stmt = std::make_shared<MemberDeclStmt>(var, init_val);
+//         switch (var->getDeclMod()) {
+//             case DeclModID::ALIGNAS_8:
+//                 stream << "alignas(8) ";
+//                 break;
+//             case DeclModID::ALIGNAS_16:
+//                 stream << "alignas(16) ";
+//                 break;
+//             case DeclModID::MUTABLE:
+//                 stream << "mutable ";
+//                 break;
+//             default: break;
+//         }
+//         member_decl_stmt->emit(ctx, stream);
+//         stream << "\n";
+//     }
 
-    for (auto &array : arrays){
-        stream << "    ";
-        auto type = array->getType();
-        assert(type->isArrayType() && "Array should have an Array type");
-        auto array_type = std::static_pointer_cast<ArrayType>(type);
-        stream << array_type->getBaseType()->getName(ctx) << " ";
-        stream << array->getNameWithoutPrefix(ctx) << " ";
-        for (const auto &dimension : array_type->getDimensions()) {
-            stream << "[" << dimension << "] ";
-        }
-        if (array->getAlignment() != 0)
-            stream << "__attribute__((aligned(" << array->getAlignment()
-                   << ")))";
-        stream << ";\n";
-    }
+//     for (auto &array : arrays){
+//         stream << "    ";
+//         auto type = array->getType();
+//         assert(type->isArrayType() && "Array should have an Array type");
+//         auto array_type = std::static_pointer_cast<ArrayType>(type);
+//         stream << array_type->getBaseType()->getName(ctx) << " ";
+//         stream << array->getNameWithoutPrefix(ctx) << " ";
+//         for (const auto &dimension : array_type->getDimensions()) {
+//             stream << "[" << dimension << "] ";
+//         }
+//         if (array->getAlignment() != 0)
+//             stream << "__attribute__((aligned(" << array->getAlignment()
+//                    << ")))";
+//         stream << ";\n";
+//     }
 
-    stream << "}struct_1;\n\n";
-}
+//     stream << "}struct_1;\n\n";
+// }
 
-static void emitDynamicStructDecl(std::shared_ptr<EmitCtx> ctx, std::ostream &stream,
-                           std::vector<std::shared_ptr<ScalarVar>> vars, std::vector<std::shared_ptr<Array>> arrays) {
-    stream << "struct DynamicStruct{\n";
+// static void emitDynamicStructDecl(std::shared_ptr<EmitCtx> ctx, std::ostream &stream,
+//                            std::vector<std::shared_ptr<ScalarVar>> vars, std::vector<std::shared_ptr<Array>> arrays) {
+//     stream << "struct DynamicStruct{\n";
 
-    for (auto &var : vars) {
-        stream << "    ";
-        auto init_val = std::make_shared<ConstantExpr>(var->getInitValue());
-        auto member_decl_stmt = std::make_shared<MemberDeclStmt>(var, init_val);
-        switch (var->getDeclMod()) {
-            case DeclModID::ALIGNAS_8:
-                stream << "alignas(8) ";
-                break;
-            case DeclModID::ALIGNAS_16:
-                stream << "alignas(16) ";
-                break;
-            case DeclModID::MUTABLE:
-                stream << "mutable ";
-                break;
-            default: break;
-        }
-        member_decl_stmt->emit(ctx, stream);
-        stream << "\n";
-    }
+//     for (auto &var : vars) {
+//         stream << "    ";
+//         auto init_val = std::make_shared<ConstantExpr>(var->getInitValue());
+//         auto member_decl_stmt = std::make_shared<MemberDeclStmt>(var, init_val);
+//         switch (var->getDeclMod()) {
+//             case DeclModID::ALIGNAS_8:
+//                 stream << "alignas(8) ";
+//                 break;
+//             case DeclModID::ALIGNAS_16:
+//                 stream << "alignas(16) ";
+//                 break;
+//             case DeclModID::MUTABLE:
+//                 stream << "mutable ";
+//                 break;
+//             default: break;
+//         }
+//         member_decl_stmt->emit(ctx, stream);
+//         stream << "\n";
+//     }
 
-    for (auto &array : arrays){
-        stream << "    ";
-        auto type = array->getType();
-        assert(type->isArrayType() && "Array should have an Array type");
-        auto array_type = std::static_pointer_cast<ArrayType>(type);
-        stream << array_type->getBaseType()->getName(ctx) << " ";
-        stream << array->getNameWithoutPrefix(ctx) << " ";
-        for (const auto &dimension : array_type->getDimensions()) {
-            stream << "[" << dimension << "] ";
-        }
-        if (array->getAlignment() != 0)
-            stream << "__attribute__((aligned(" << array->getAlignment()
-                   << ")))";
-        stream << ";\n";
-    }
+//     for (auto &array : arrays){
+//         stream << "    ";
+//         auto type = array->getType();
+//         assert(type->isArrayType() && "Array should have an Array type");
+//         auto array_type = std::static_pointer_cast<ArrayType>(type);
+//         stream << array_type->getBaseType()->getName(ctx) << " ";
+//         stream << array->getNameWithoutPrefix(ctx) << " ";
+//         for (const auto &dimension : array_type->getDimensions()) {
+//             stream << "[" << dimension << "] ";
+//         }
+//         if (array->getAlignment() != 0)
+//             stream << "__attribute__((aligned(" << array->getAlignment()
+//                    << ")))";
+//         stream << ";\n";
+//     }
 
-    stream << "};\n\n";
+//     stream << "};\n\n";
 
-    stream << "DynamicStruct* struct_2 = new DynamicStruct;\n";
-}
+//     stream << "DynamicStruct* struct_2 = new DynamicStruct;\n";
+// }
 
-static void emitClassDecl(std::shared_ptr<EmitCtx> ctx, std::ostream &stream, std::vector<std::shared_ptr<ScalarVar>> vars,
-                            std::vector<std::shared_ptr<Array>> arrays, std::vector<std::shared_ptr<ScalarVar>> private_vars) {
-    stream << "class GlobalClass{\n";
-    stream << "  public:\n";
+// static void emitClassDecl(std::shared_ptr<EmitCtx> ctx, std::ostream &stream, std::vector<std::shared_ptr<ScalarVar>> vars,
+//                             std::vector<std::shared_ptr<Array>> arrays, std::vector<std::shared_ptr<ScalarVar>> private_vars) {
+//     stream << "class GlobalClass{\n";
+//     stream << "  public:\n";
 
-    for (auto &var : vars) {
-        stream << "    ";
-        auto init_val = std::make_shared<ConstantExpr>(var->getInitValue());
-        auto member_decl_stmt = std::make_shared<MemberDeclStmt>(var, init_val);
-        switch (var->getDeclMod()) {
-            case DeclModID::ALIGNAS_8:
-                stream << "alignas(8) ";
-                break;
-            case DeclModID::ALIGNAS_16:
-                stream << "alignas(16) ";
-                break;
-            case DeclModID::MUTABLE:
-                stream << "mutable ";
-                break;
-            default: break;
-        }
-        member_decl_stmt->emit(ctx, stream);
-        stream << "\n";
-    }
+//     for (auto &var : vars) {
+//         stream << "    ";
+//         auto init_val = std::make_shared<ConstantExpr>(var->getInitValue());
+//         auto member_decl_stmt = std::make_shared<MemberDeclStmt>(var, init_val);
+//         switch (var->getDeclMod()) {
+//             case DeclModID::ALIGNAS_8:
+//                 stream << "alignas(8) ";
+//                 break;
+//             case DeclModID::ALIGNAS_16:
+//                 stream << "alignas(16) ";
+//                 break;
+//             case DeclModID::MUTABLE:
+//                 stream << "mutable ";
+//                 break;
+//             default: break;
+//         }
+//         member_decl_stmt->emit(ctx, stream);
+//         stream << "\n";
+//     }
 
-    for (auto &array : arrays){
-        stream << "    ";
-        auto type = array->getType();
-        assert(type->isArrayType() && "Array should have an Array type");
-        auto array_type = std::static_pointer_cast<ArrayType>(type);
-        stream << array_type->getBaseType()->getName(ctx) << " ";
-        stream << array->getNameWithoutPrefix(ctx) << " ";
-        for (const auto &dimension : array_type->getDimensions()) {
-            stream << "[" << dimension << "] ";
-        }
-        if (array->getAlignment() != 0)
-            stream << "__attribute__((aligned(" << array->getAlignment()
-                   << ")))";
-        stream << ";\n";
-    }
+//     for (auto &array : arrays){
+//         stream << "    ";
+//         auto type = array->getType();
+//         assert(type->isArrayType() && "Array should have an Array type");
+//         auto array_type = std::static_pointer_cast<ArrayType>(type);
+//         stream << array_type->getBaseType()->getName(ctx) << " ";
+//         stream << array->getNameWithoutPrefix(ctx) << " ";
+//         for (const auto &dimension : array_type->getDimensions()) {
+//             stream << "[" << dimension << "] ";
+//         }
+//         if (array->getAlignment() != 0)
+//             stream << "__attribute__((aligned(" << array->getAlignment()
+//                    << ")))";
+//         stream << ";\n";
+//     }
 
-    for (auto &var : private_vars) {
-        stream << "    ";
-        stream << var->getType()->getName(ctx) << "& " << var->getNameWithoutPrefix(ctx);
-        stream << "{ return private_mbr_" << var->getNumberInName(ctx) << "; }\n";
-    }
+//     for (auto &var : private_vars) {
+//         stream << "    ";
+//         stream << var->getType()->getName(ctx) << "& " << var->getNameWithoutPrefix(ctx);
+//         stream << "{ return private_mbr_" << var->getNumberInName(ctx) << "; }\n";
+//     }
 
-    stream << "\n  private:\n";
+//     stream << "\n  private:\n";
 
-    for (auto &var : private_vars) {
-        stream << "    ";
-        auto init_val = std::make_shared<ConstantExpr>(var->getInitValue());
-        auto private_decl_stmt = std::make_shared<PrivateDeclStmt>(var, init_val);
-        private_decl_stmt->emit(ctx,stream);
-        stream << "\n";
-    }
+//     for (auto &var : private_vars) {
+//         stream << "    ";
+//         auto init_val = std::make_shared<ConstantExpr>(var->getInitValue());
+//         auto private_decl_stmt = std::make_shared<PrivateDeclStmt>(var, init_val);
+//         private_decl_stmt->emit(ctx,stream);
+//         stream << "\n";
+//     }
 
-    stream << "}object_1;\n\n";
-}
+//     stream << "}object_1;\n\n";
+// }
 
-static void emitDynamicClassDecl(std::shared_ptr<EmitCtx> ctx, std::ostream &stream, std::vector<std::shared_ptr<ScalarVar>> vars,
-                          std::vector<std::shared_ptr<Array>> arrays) {
-    stream << "class DynamicClass{\n";
-    stream << "  public:\n";
+// static void emitDynamicClassDecl(std::shared_ptr<EmitCtx> ctx, std::ostream &stream, std::vector<std::shared_ptr<ScalarVar>> vars,
+//                           std::vector<std::shared_ptr<Array>> arrays) {
+//     stream << "class DynamicClass{\n";
+//     stream << "  public:\n";
 
-    for (auto &var : vars) {
-        stream << "    ";
-        auto init_val = std::make_shared<ConstantExpr>(var->getInitValue());
-        auto member_decl_stmt = std::make_shared<MemberDeclStmt>(var, init_val);
-        switch (var->getDeclMod()) {
-            case DeclModID::ALIGNAS_8:
-                stream << "alignas(8) ";
-                break;
-            case DeclModID::ALIGNAS_16:
-                stream << "alignas(16) ";
-                break;
-            case DeclModID::MUTABLE:
-                stream << "mutable ";
-                break;
-            default: break;
-        }
-        member_decl_stmt->emit(ctx, stream);
-        stream << "\n";
-    }
+//     for (auto &var : vars) {
+//         stream << "    ";
+//         auto init_val = std::make_shared<ConstantExpr>(var->getInitValue());
+//         auto member_decl_stmt = std::make_shared<MemberDeclStmt>(var, init_val);
+//         switch (var->getDeclMod()) {
+//             case DeclModID::ALIGNAS_8:
+//                 stream << "alignas(8) ";
+//                 break;
+//             case DeclModID::ALIGNAS_16:
+//                 stream << "alignas(16) ";
+//                 break;
+//             case DeclModID::MUTABLE:
+//                 stream << "mutable ";
+//                 break;
+//             default: break;
+//         }
+//         member_decl_stmt->emit(ctx, stream);
+//         stream << "\n";
+//     }
 
-    for (auto &array : arrays){
-        stream << "    ";
-        auto type = array->getType();
-        assert(type->isArrayType() && "Array should have an Array type");
-        auto array_type = std::static_pointer_cast<ArrayType>(type);
-        stream << array_type->getBaseType()->getName(ctx) << " ";
-        stream << array->getNameWithoutPrefix(ctx) << " ";
-        for (const auto &dimension : array_type->getDimensions()) {
-            stream << "[" << dimension << "] ";
-        }
-        if (array->getAlignment() != 0)
-            stream << "__attribute__((aligned(" << array->getAlignment()
-                   << ")))";
-        stream << ";\n";
-    }
+//     for (auto &array : arrays){
+//         stream << "    ";
+//         auto type = array->getType();
+//         assert(type->isArrayType() && "Array should have an Array type");
+//         auto array_type = std::static_pointer_cast<ArrayType>(type);
+//         stream << array_type->getBaseType()->getName(ctx) << " ";
+//         stream << array->getNameWithoutPrefix(ctx) << " ";
+//         for (const auto &dimension : array_type->getDimensions()) {
+//             stream << "[" << dimension << "] ";
+//         }
+//         if (array->getAlignment() != 0)
+//             stream << "__attribute__((aligned(" << array->getAlignment()
+//                    << ")))";
+//         stream << ";\n";
+//     }
 
-    stream << "    " << "DynamicClass" << "(){\n" ;
+//     stream << "    " << "DynamicClass" << "(){\n" ;
 
-    for (auto &var : vars) {
-        auto init_val = std::make_shared<ConstantExpr>(var->getInitValue());
-        auto constructor_assign_stmt = std::make_shared<ConstructorAssignStmt>(var, init_val);
-        stream << "        ";
-        constructor_assign_stmt->emit(ctx, stream);
-        stream << "\n";
-    }
+//     for (auto &var : vars) {
+//         auto init_val = std::make_shared<ConstantExpr>(var->getInitValue());
+//         auto constructor_assign_stmt = std::make_shared<ConstructorAssignStmt>(var, init_val);
+//         stream << "        ";
+//         constructor_assign_stmt->emit(ctx, stream);
+//         stream << "\n";
+//     }
 
-    for (const auto &array : arrays) {
-        std::string offset = "        ";
-        auto type = array->getType();
-        assert(type->isArrayType() && "Array should have an Array type");
-        auto array_type = std::static_pointer_cast<ArrayType>(type);
-        size_t idx = 0;
-        for (const auto &dimension : array_type->getDimensions()) {
-            stream << offset << "for (size_t i_" << idx << " = 0; i_" << idx
-                   << " < " << dimension << "; ++i_" << idx << ") \n";
-            offset += "    ";
-            idx++;
-        }
-        stream << offset << array->getNameWithoutPrefix(ctx) << " ";
-        for (size_t i = 0; i < idx; ++i)
-            stream << "[i_" << i << "] ";
-        stream << "= ";
-        auto emit_const_expr = [&array, &ctx, &stream](bool use_main_vals) {
-            auto init_val = array->getInitValues(use_main_vals);
-            auto init_const = std::make_shared<ConstantExpr>(init_val);
-            init_const->emit(ctx, stream);
-        };
-        if (array->getMulValsAxisIdx() != -1) {
-            stream << "(i_" << array->getMulValsAxisIdx() << " % "
-                   << Options::vals_number << " == " << Options::main_val_idx
-                   << ") ? ";
-        }
-        emit_const_expr(true);
-        if (array->getMulValsAxisIdx() != -1) {
-            stream << " : ";
-            emit_const_expr(false);
-        }
-        stream << ";\n";
-    }
+//     for (const auto &array : arrays) {
+//         std::string offset = "        ";
+//         auto type = array->getType();
+//         assert(type->isArrayType() && "Array should have an Array type");
+//         auto array_type = std::static_pointer_cast<ArrayType>(type);
+//         size_t idx = 0;
+//         for (const auto &dimension : array_type->getDimensions()) {
+//             stream << offset << "for (size_t i_" << idx << " = 0; i_" << idx
+//                    << " < " << dimension << "; ++i_" << idx << ") \n";
+//             offset += "    ";
+//             idx++;
+//         }
+//         stream << offset << array->getNameWithoutPrefix(ctx) << " ";
+//         for (size_t i = 0; i < idx; ++i)
+//             stream << "[i_" << i << "] ";
+//         stream << "= ";
+//         auto emit_const_expr = [&array, &ctx, &stream](bool use_main_vals) {
+//             auto init_val = array->getInitValues(use_main_vals);
+//             auto init_const = std::make_shared<ConstantExpr>(init_val);
+//             init_const->emit(ctx, stream);
+//         };
+//         if (array->getMulValsAxisIdx() != -1) {
+//             stream << "(i_" << array->getMulValsAxisIdx() << " % "
+//                    << Options::vals_number << " == " << Options::main_val_idx
+//                    << ") ? ";
+//         }
+//         emit_const_expr(true);
+//         if (array->getMulValsAxisIdx() != -1) {
+//             stream << " : ";
+//             emit_const_expr(false);
+//         }
+//         stream << ";\n";
+//     }
 
-    stream << "    };\n";
+//     stream << "    };\n";
 
-    stream << "};\n\n";
+//     stream << "};\n\n";
 
-    stream << "DynamicClass* object_2 = new DynamicClass;\n\n";
-}
+//     stream << "DynamicClass* object_2 = new DynamicClass;\n\n";
+// }
 
 void ProgramGenerator::emitDecl(std::shared_ptr<EmitCtx> ctx,
                                 std::ostream &stream) {
@@ -667,13 +667,13 @@ void ProgramGenerator::emitDecl(std::shared_ptr<EmitCtx> ctx,
     emitArrayDecl(ctx, stream, ext_inp_sym_tbl->getArrays());
     emitArrayDecl(ctx, stream, ext_out_sym_tbl->getArrays());
 
-    stream << "\n/* -- Structs -- */\n";
-    emitStructDecl(ctx, stream, struct_var_mbr_buffer, struct_arr_mbr_buffer);
-    emitDynamicStructDecl(ctx, stream, dyn_struct_var_mbr_buffer, dyn_struct_arr_mbr_buffer);
+    // stream << "\n/* -- Structs -- */\n";
+    // emitStructDecl(ctx, stream, struct_var_mbr_buffer, struct_arr_mbr_buffer);
+    // emitDynamicStructDecl(ctx, stream, dyn_struct_var_mbr_buffer, dyn_struct_arr_mbr_buffer);
 
-    stream << "\n/* -- Classes -- */\n";
-    emitClassDecl(ctx, stream, class_var_mbr_buffer, class_arr_mbr_buffer, class_private_var_mbr_buffer);
-    emitDynamicClassDecl(ctx, stream, dyn_class_var_mbr_buffer, dyn_class_arr_mbr_buffer);
+    // stream << "\n/* -- Classes -- */\n";
+    // emitClassDecl(ctx, stream, class_var_mbr_buffer, class_arr_mbr_buffer, class_private_var_mbr_buffer);
+    // emitDynamicClassDecl(ctx, stream, dyn_class_var_mbr_buffer, dyn_class_arr_mbr_buffer);
 }
 
 static void emitArrayInit(std::shared_ptr<EmitCtx> ctx, std::ostream &stream,
@@ -719,20 +719,20 @@ static void emitArrayInit(std::shared_ptr<EmitCtx> ctx, std::ostream &stream,
     }
 }
 
-static void emitVarMemberInit(std::shared_ptr<EmitCtx> ctx, std::ostream &stream,
-                              std::vector<std::shared_ptr<ScalarVar>> vars) {
-    std::string offset = "    ";
-    for (auto &var : vars) {
-        VarKindID var_kind = var->getVarKind();
-        if (var_kind == VarKindID::DYN_CLASS_MBR)
-            break;
-        auto init_val = std::make_shared<ConstantExpr>(var->getInitValue());
-        auto assign_stmt = std::make_shared<AssignStmt>(var, init_val);
-        stream << offset;
-        assign_stmt->emit(ctx, stream);
-        stream << "\n";
-    }
-}
+// static void emitVarMemberInit(std::shared_ptr<EmitCtx> ctx, std::ostream &stream,
+//                               std::vector<std::shared_ptr<ScalarVar>> vars) {
+//     std::string offset = "    ";
+//     for (auto &var : vars) {
+//         VarKindID var_kind = var->getVarKind();
+//         if (var_kind == VarKindID::DYN_CLASS_MBR)
+//             break;
+//         auto init_val = std::make_shared<ConstantExpr>(var->getInitValue());
+//         auto assign_stmt = std::make_shared<AssignStmt>(var, init_val);
+//         stream << offset;
+//         assign_stmt->emit(ctx, stream);
+//         stream << "\n";
+//     }
+// }
 
 void ProgramGenerator::emitInit(std::shared_ptr<EmitCtx> ctx,
                                 std::ostream &stream) {
@@ -740,12 +740,12 @@ void ProgramGenerator::emitInit(std::shared_ptr<EmitCtx> ctx,
     stream << "/* -- Arrays -- */\n";
     emitArrayInit(ctx, stream, ext_inp_sym_tbl->getArrays());
     emitArrayInit(ctx, stream, ext_out_sym_tbl->getArrays());
-    stream << "\n/* -- Structs -- */\n";
-    emitVarMemberInit(ctx, stream, struct_var_mbr_buffer);
-    emitVarMemberInit(ctx, stream, dyn_struct_var_mbr_buffer);
-    stream << "\n/* -- Classes -- */\n";
-    emitVarMemberInit(ctx, stream, class_var_mbr_buffer);
-    emitVarMemberInit(ctx, stream, dyn_class_var_mbr_buffer);
+    // stream << "\n/* -- Structs -- */\n";
+    // emitVarMemberInit(ctx, stream, struct_var_mbr_buffer);
+    // emitVarMemberInit(ctx, stream, dyn_struct_var_mbr_buffer);
+    // stream << "\n/* -- Classes -- */\n";
+    // emitVarMemberInit(ctx, stream, class_var_mbr_buffer);
+    // emitVarMemberInit(ctx, stream, dyn_class_var_mbr_buffer);
     stream << "}\n\n";
 }
 
@@ -1003,7 +1003,6 @@ static bool emitVarFuncParam(std::shared_ptr<EmitCtx> ctx, std::ostream &stream,
         emit_any = true;
     }
 
-    stream << ", GlobalStruct struct_1, DynamicStruct* struct_2, GlobalClass object_1, DynamicClass* object_2 ";
     ctx->setSYCLPrefix("");
     return emit_any;
 }
@@ -1044,7 +1043,6 @@ static bool emitVarFuncParamInMain(std::shared_ptr<EmitCtx> ctx, std::ostream &s
         }
         emit_any = true;
     }
-    stream << ", struct_1, struct_2, object_1, object_2";
     ctx->setSYCLPrefix("");
     return emit_any;
 }
@@ -1139,8 +1137,8 @@ void ProgramGenerator::emitRelease(std::shared_ptr<EmitCtx> ctx,
                                 std::ostream &stream) {
     stream << "void Release(){\n";
     emitDeleteStmt(ctx, stream, need_delete_param_buffer);
-    stream << "    delete struct_2;\n";
-    stream << "    delete object_2;\n";
+    // stream << "    delete struct_2;\n";
+    // stream << "    delete object_2;\n";
     stream << "};\n";
 }
 
