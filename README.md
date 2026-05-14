@@ -6,7 +6,7 @@
 - 面向对象
 - 指针、动态内存分配
 - 赋值关键词 (const, static等)
-- 自定义函数注入
+- 函数注入
 
 
 
@@ -69,19 +69,25 @@ python3 __main__.py
 
 通过 `/runner/default.yaml` 可以自定义测试规模
 
-- language：一般无需改动
-- generator_path：指 OOP-YARPGen 的可执行文件路径
-- testing_path：测试文件夹路径，用于存放测试用例和日志
-- timeout：编译的超时时间（以秒为单位）
-- run_count：每次脚本生产的测试用例数量
+- `language`：一般无需改动
+- `generator_path`：指 OOP-YARPGen 的可执行文件路径
+- `testing_path`：测试文件夹路径，用于存放测试用例和日志
+- `timeout`：编译的超时时间（以秒为单位）
+- `run_count`：每次脚本生成的测试用例数量
 
 
 
 #### 3、函数注入设置
 
-- func_source_path：用户提供的函数 zip 包的路径
-- func_batch_size： 每次生成包含的随机函数的个数
-- func_total：函数 zip 包中函数的总数
+- `func_zip_path`：用户提供的函数 zip 包的路径
+- `func_total`：函数 zip 包中函数的总数
+
+
+
+在 `/runner` 路径中，自带的函数 zip 库如下：
+
+- `functions.zip` ：稳定的函数注入库（默认）
+- `functions_all.zip`  ：包含指针参数的全量函数注入库
 
 
 
@@ -94,86 +100,69 @@ python3 __main__.py
 
 
 
-#### 三、函数注入功能
+### 三、函数注入功能
 
-#### 1、指定函数
+#### 1、原理
 
-若需要在测试用例中注入自定义的函数，在 `/runner` 目录下 加入一个名为 `functions.yaml` 的文件：
+在运行时，OOP-YARPGen 会自动从函数 zip 库中随机挑选一个函数，注入到测试用例中。
+
+函数 zip 库中全部是 yaml 文件，每个 yaml 对应一个函数：
 
 ```
-# 示例函数 1
-- function_name: func_1
-  parameter_types:
-  - int
-  - float
-  return_type: double
-  function: |- 
-    double func_1(int a, float b) {
-      return a + b;
-    }
-  input:
-  - '10'
-  - '3.14'
-  output: '13.14'
-  misc:
-  - const double PI = 3.14159;
-
-# 示例函数 2
-- function_name: func_2
-  parameter_types:
-  - void
-  return_type: int
-  function: |- 
-    int func_2() {
-      return VALUE;
-    }
-  input: []
-  output: '20'
-  misc:
-  - const int VALUE = 20;
+# 示例函数
+function_name: func_1
+parameter_types:
+- int
+return_type: int
+function: |-
+  int func_1(int a) {
+    return a;
+  }
+input:
+- '1'
+output: '1'
+misc:
+- const int VALUE = 0;
 ```
 
-**必须是一个列表，且必须包含以下细节：**
+**必须包含以下内容：**
 
-1. **`function_name`**：名称
-2. **`parameter_types`**：参数类型列表。若没有参数使用 `void`。
-3. **`return_type`**：返回类型
-4. **`function`**：完整代码，（ `|-` 表示的多行字符串）
-5. **`input`**：输入参数值（字符串列表）
-6. **`output`**：返回结果值（字符串）
-7. **`misc`**：其他辅助信息，例如宏定义、常量等。
-
-
-
-#### 2、函数库
-
-若需要注入整个函数库，则通过 `/runner/default.yaml` 可以自定义函数库 zip 的路径和参数
+- **`function_name`**：名称
+- **`parameter_types`**：参数类型列表
+- **`return_type`**：返回类型
+- **`function`**：函数体代码（ `|-` 表示的多行字符串）
+- **`input`**：输入参数值（字符串列表）
+- **`output`**：返回结果值（字符串）
+- **`misc`**：其他辅助信息，例如宏定义、常量等。
 
 
 
-**你需要提供一个 zip 压缩包，必须包含了 k 个 yaml 文件，名称必须为***
+#### 2、自定义函数库
+
+若需要注入自定义函数库，则通过 `/runner/default.yaml` 设定其 zip 的路径和函数数量
+
+**你需要提供一个 zip 压缩包，必须包含了 k 个 yaml 文件，名称必须为：**
 
 ```
 func_n.yaml		# n 从 0 到 k
 ```
 
-**单个 yaml 格式必须如下：**
 
-```
-function_name: add
-parameter_types:
-- int
-- int
-return_type: int
-function: |-  
-  int add(int a, int b) {
-      return a + b + VALUE;
-  }
-input:
-- '1'
-- '2'
-output: '3'
-misc:
-- const int VALUE = 0;
-```
 
+### 四、消融支持
+
+#### 1、不生成函数
+
+在  `/runner/__main__.py` 中，将参数 `func_zip_path` 指定为空即可，测试脚本无法找到函数库，则不执行注入。
+
+
+
+#### 2、不生成指针
+
+在 git branch 中切换至 no-ptr 分支，进行编译安装
+
+
+
+#### 3、不生成对象
+
+在 git branch 中切换至 no-object 分支，进行编译安装
